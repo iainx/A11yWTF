@@ -25,6 +25,7 @@
     // Insert code here to initialize your application
     _dockbar = [[FauxElement alloc] init];
     _dockbar.accessibilityIdentifier = @"Dockbar";
+    _dockbar.accessibilityWindow = _window;
     
     _alignment = [[FauxElement alloc] init];
     _alignment.accessibilityIdentifier = @"Alignment";
@@ -41,33 +42,15 @@
     
     [_box accessibilityAddChildElement:_label];
 
-    NSLog (@"Child: %@", _label);
-    [self dumpParents:[_label accessibilityParent]];
-}
-
-// dumpParents: recurses through the accessibility heirarchy
-// and then logs the elements and their -accessibilityWindow
-// from the root to the leaf.
-//
-// It logs the root element correctly but when it unwinds to the next level
-// to log the Alignment, the call to -accessibilityWindow climbs back up to
-// the root element, and sets the parent of Dockbar to be Alignment
-// which creates a loop
-- (void)dumpParents:(id<NSAccessibility>)child
-{
-    if (child == nil) {
-        return;
-    }
-    
-    id parent = [child accessibilityParent];
-    [self dumpParents:parent];
-    
-    if (parent == nil) {
-        return;
-    }
-    
-    NSLog (@"Parent %@", parent);
-    NSLog (@"   L Window: %@", [parent accessibilityWindow]);
+    // Calling -accessibillityWindow on any of the child elements
+    // (here for example we use _box) causes Cocoa to climb to the
+    // root of the accessibility tree (Dockbar) and then assign
+    // Alignment as the parent of Dockbar, causing a loop in the tree
+    // (Alignment is the parent Dockbar which is the parent of Alignment)
+    // and an infinite loop.
+    //
+    // This seems to happen whether _dockbar.accessibilityWindow is set or not
+    NSLog (@"%@", [_box accessibilityWindow]);
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
